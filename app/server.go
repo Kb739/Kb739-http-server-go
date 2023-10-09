@@ -3,11 +3,39 @@ package main
 import (
 	"fmt"
 	"log"
+	"regexp"
+	"strings"
 
 	// Uncomment this block to pass the first stage
 	"net"
 	"os"
 )
+
+type Req struct {
+	path string
+}
+
+func parseReq(buffer []byte) Req {
+	path := strings.Split(string(buffer), "\r\n")[1]
+	return Req{path}
+}
+
+func handleConnection(conn net.Conn) {
+	var buffer []byte
+	if _, err := conn.Read(buffer); err != nil {
+		log.Fatal(err.Error())
+	}
+	req := parseReq(buffer)
+	match := regexp.MustCompile(`/.*`).FindString(req.path)
+	response := "HTTP/1.1 200 OK\r\n\r\n"
+	if match == "" {
+		response = "HTTP/1.1 404 Not Found\r\n\r\n"
+	}
+	_, err := conn.Write([]byte(response))
+	if err != nil {
+		log.Fatal(err.Error())
+	}
+}
 
 func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
@@ -27,10 +55,5 @@ func main() {
 		os.Exit(1)
 	}
 	defer conn.Close()
-
-	response := "HTTP/1.1 200 OK\r\n\r\n"
-	_, err = conn.Write([]byte(response))
-	if err != nil {
-		log.Fatal(err.Error())
-	}
+	handleConnection(conn)
 }
