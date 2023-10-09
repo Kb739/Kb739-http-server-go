@@ -16,12 +16,13 @@ type Req struct {
 }
 
 func parseReq(buffer []byte) Req {
-	path := strings.Split(string(buffer), "\r\n")[1]
+	startLine := strings.Split(string(buffer), "\r\n")[0]
+	path := strings.Split(startLine, " ")[1]
 	return Req{path}
 }
 
 func handleConnection(conn net.Conn) {
-	var buffer []byte
+	buffer := make([]byte, 1024)
 	if _, err := conn.Read(buffer); err != nil {
 		log.Fatal(err.Error())
 	}
