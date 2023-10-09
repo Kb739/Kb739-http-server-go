@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"regexp"
 	"strings"
 
 	// Uncomment this block to pass the first stage
@@ -27,9 +26,8 @@ func handleConnection(conn net.Conn) {
 		log.Fatal(err.Error())
 	}
 	req := parseReq(buffer)
-	match := regexp.MustCompile(`/.*`).FindString(req.path)
 	response := "HTTP/1.1 200 OK\r\n\r\n"
-	if match == "" {
+	if req.path != "/" {
 		response = "HTTP/1.1 404 Not Found\r\n\r\n"
 	}
 	_, err := conn.Write([]byte(response))
