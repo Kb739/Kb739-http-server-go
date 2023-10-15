@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"log"
 	"strings"
@@ -11,22 +12,43 @@ import (
 )
 
 type Req struct {
-	path string
+	method  string
+	url     string
+	headers map[string]string
+	body    string
 }
+
 type HandleFunc func(net.Conn, Req)
 
 var routes map[string]HandleFunc
 var absRoutes map[string]HandleFunc
 
-func parseReq(buffer []byte) Req {
-	//assume only one slash in between
-	startLine := strings.Split(string(buffer), "\r\n")[0]
-	path := strings.Split(startLine, " ")[1]
-	r := []rune(path)
-	if path != "/" && r[len(r)-1] == '/' {
-		path = path[:len(path)-1]
+func parseReq(buffer []byte) (req Req) {
+	req.headers = make(map[string]string)
+	scanner := bufio.NewScanner(strings.NewReader(string(buffer)))
+	if scanner.Scan() {
+		requestLine := scanner.Text()
+		sections := strings.Split(requestLine, " ")
+		req.method = sections[0]
+		req.url = sections[1]
+		r := []rune(req.url)
+		if req.url != "/" && r[len(r)-1] == '/' {
+			req.url = req.url[:len(req.url)-1]
+		}
 	}
-	return Req{path}
+	for scanner.Scan() {
+		line := scanner.Text()
+		if line == "" {
+			break
+		}
+		pair := strings.SplitN(line, ":", 2)
+		req.headers[pair[0]] = pair[1]
+
+	}
+	if scanner.Scan() {
+		req.body += scanner.Text() + "\n"
+	}
+	return req
 }
 
 func handleBase(conn net.Conn, req Req) {
@@ -48,10 +70,10 @@ func handleConnection(conn net.Conn) {
 		log.Fatal(err.Error())
 	}
 	req := parseReq(buffer)
-	if req.path == "/" {
+	if req.url == "/" {
 		handleBase(conn, req)
 	} else {
-		path := "*" + req.path
+		path := "*" + req.url
 		arr := strings.Split(path, "/")
 		reqRoute := path
 		fn, exists := absRoutes[reqRoute]
@@ -98,7 +120,7 @@ func main() {
 	routes = make(map[string]HandleFunc)
 	absRoutes = make(map[string]HandleFunc)
 	handleFunc("/", func(conn net.Conn, req Req) {
-		arr := strings.Split(req.path, "/")
+		arr := strings.Split(req.url, "/")
 		response := "HTTP/1.1 200 OK\r\n\r\n"
 		if len(arr) > 2 {
 			response = "HTTP/1.1 404 Not Found\r\n\r\n"
@@ -111,11 +133,18 @@ func main() {
 
 	handleFunc("/echo/", func(conn net.Conn, req Req) {
 		str := ""
-		arr := strings.Split(req.path, "/")
+		arr := strings.Split(req.url, "/")
 		if len(arr) > 2 {
-			str = req.path[6:len(req.path)]
+			str = req.url[6:len(req.url)]
 		}
 		_, err := conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(str), str)))
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	})
+	handleFunc("/user-agent", func(conn net.Conn, req Req) {
+		body := req.headers["User-Agent"]
+		_, err := conn.Write([]byte(fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: %d\r\n\r\n%s", len(body), body)))
 		if err != nil {
 			log.Fatal(err.Error())
 		}
