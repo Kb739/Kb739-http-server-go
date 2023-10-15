@@ -41,7 +41,7 @@ func parseReq(buffer []byte) (req Req) {
 		if line == "" {
 			break
 		}
-		pair := strings.SplitN(line, ":", 2)
+		pair := strings.SplitN(line, ": ", 2)
 		req.headers[pair[0]] = pair[1]
 
 	}
