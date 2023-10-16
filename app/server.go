@@ -167,8 +167,8 @@ func main() {
 			log.Fatal(err.Error())
 		}
 	})
-	// l, err := net.Listen("tcp", "0.0.0.0:4221")
-	l, err := net.Listen("tcp", "127.0.0.1:3000")
+	l, err := net.Listen("tcp", "0.0.0.0:4221")
+	// l, err := net.Listen("tcp", "127.0.0.1:3000")
 
 	if err != nil {
 		fmt.Println("Failed to bind to port 4221")
