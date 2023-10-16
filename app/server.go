@@ -65,6 +65,7 @@ func handleBase(conn net.Conn, req Req) {
 }
 
 func handleConnection(conn net.Conn) {
+	defer conn.Close()
 	buffer := make([]byte, 2048)
 	if _, err := conn.Read(buffer); err != nil {
 		log.Fatal(err.Error())
@@ -119,6 +120,7 @@ func main() {
 	//setting up routes
 	routes = make(map[string]HandleFunc)
 	absRoutes = make(map[string]HandleFunc)
+
 	handleFunc("/", func(conn net.Conn, req Req) {
 		arr := strings.Split(req.url, "/")
 		response := "HTTP/1.1 200 OK\r\n\r\n"
@@ -158,12 +160,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	conn, err := l.Accept()
-	if err != nil {
-		fmt.Println("Error accepting connection: ", err.Error())
-		os.Exit(1)
+	for {
+		conn, err := l.Accept()
+		if err != nil {
+			fmt.Println("Error accepting connection: ", err.Error())
+			os.Exit(1)
+		}
+		go handleConnection(conn)
 	}
-	defer conn.Close()
-
-	handleConnection(conn)
 }
