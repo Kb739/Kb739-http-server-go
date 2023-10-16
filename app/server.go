@@ -2,8 +2,10 @@ package main
 
 import (
 	"bufio"
+	"flag"
 	"fmt"
 	"log"
+	"path/filepath"
 	"strings"
 
 	// Uncomment this block to pass the first stage
@@ -116,6 +118,8 @@ func main() {
 	// You can use print statements as follows for debugging, they'll be visible when running tests.
 	fmt.Println("Logs from your program will appear here!")
 
+	dir := flag.String("directory", "", "directory to server file")
+	flag.Parse()
 	// Uncomment this block to pass the first stage
 	//setting up routes
 	routes = make(map[string]HandleFunc)
@@ -151,9 +155,20 @@ func main() {
 			log.Fatal(err.Error())
 		}
 	})
-
-	l, err := net.Listen("tcp", "0.0.0.0:4221")
-	// l, err := net.Listen("tcp", "127.0.0.1:3000")
+	handleFunc("/files/", func(conn net.Conn, req Req) {
+		res := "HTTP/1.1 404 Not Found\r\n\r\n"
+		filename := strings.Split(req.url, "/")[2]
+		content, err := os.ReadFile(filepath.Join(*dir, filename))
+		if err == nil {
+			res = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: %s\r\nContent-Length: %d\r\n\r\n%s", "application/octet-stream", len(content), content)
+		}
+		conn.Write([]byte(res))
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	})
+	// l, err := net.Listen("tcp", "0.0.0.0:4221")
+	l, err := net.Listen("tcp", "127.0.0.1:3000")
 
 	if err != nil {
 		fmt.Println("Failed to bind to port 4221")
