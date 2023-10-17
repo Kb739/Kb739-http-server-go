@@ -156,13 +156,27 @@ func main() {
 		}
 	})
 	handleFunc("/files/", func(conn net.Conn, req Req) {
-		res := "HTTP/1.1 404 Not Found\r\n\r\n"
 		filename := strings.Split(req.url, "/")[2]
-		content, err := os.ReadFile(filepath.Join(*dir, filename))
-		if err == nil {
-			res = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: %s\r\nContent-Length: %d\r\n\r\n%s", "application/octet-stream", len(content), content)
+		path := filepath.Join(*dir, filename)
+		res := "HTTP/1.1 405 Method Not Allowed\r\n\r\n"
+		if req.method == "GET" {
+			content, err := os.ReadFile(path)
+			if err == nil {
+				res = fmt.Sprintf("HTTP/1.1 200 OK\r\nContent-Type: %s\r\nContent-Length: %d\r\n\r\n%s", "application/octet-stream", len(content), content)
+			} else {
+				res = "HTTP/1.1 404 Not Found\r\n\r\n"
+			}
+
+		} else if req.method == "POST" {
+			content := req.body
+			err := os.WriteFile(path, []byte(content), os.ModePerm)
+			if err == nil {
+				res = "HTTP/1.1 201 Created\r\n\r\n"
+			} else {
+				res = "HTTP/1.1 500 Internal Server Error\r\n\r\n"
+			}
 		}
-		conn.Write([]byte(res))
+		_, err := conn.Write([]byte(res))
 		if err != nil {
 			log.Fatal(err.Error())
 		}
