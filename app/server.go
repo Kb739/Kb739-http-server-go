@@ -51,6 +51,7 @@ func parseReq(buffer []byte) (req Req) {
 	if scanner.Scan() {
 		arr = append(arr, scanner.Text())
 	}
+	print(arr)
 	req.body = strings.Join(arr, "\n")
 	return req
 }
