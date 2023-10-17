@@ -47,10 +47,8 @@ func parseReq(buffer []byte) (req Req) {
 		req.headers[pair[0]] = pair[1]
 
 	}
-	for scanner.Scan() {
-		req.body += scanner.Text() + "\n"
-		req.body = req.body[:len(req.body)-1]
-	}
+	reqSlice := strings.Split(string(buffer), "\r\n")
+	req.body = reqSlice[len(reqSlice)-1]
 	return req
 }
 
