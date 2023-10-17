@@ -167,10 +167,13 @@ func main() {
 			}
 
 		} else if req.method == "POST" {
-			f, _ := os.Create(path)
-			f.WriteString(req.body)
-			f.Close()
-			res = "HTTP/1.1 201 Created\r\n\r\n"
+			content := req.body
+			err := os.WriteFile(path, []byte(content), os.ModePerm)
+			if err == nil {
+				res = "HTTP/1.1 201 Created\r\n\r\n"
+			} else {
+				res = "HTTP/1.1 500 Internal Server Error\r\n\r\n"
+			}
 		}
 		_, err := conn.Write([]byte(res))
 		if err != nil {
