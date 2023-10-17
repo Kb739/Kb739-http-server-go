@@ -4,9 +4,9 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
-	"io/fs"
 	"log"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	// Uncomment this block to pass the first stage
@@ -18,7 +18,7 @@ type Req struct {
 	method  string
 	url     string
 	headers map[string]string
-	body    string
+	body    []byte
 }
 
 type HandleFunc func(net.Conn, Req)
@@ -26,7 +26,19 @@ type HandleFunc func(net.Conn, Req)
 var routes map[string]HandleFunc
 var absRoutes map[string]HandleFunc
 
+func trimNullBytes(data []byte) []byte {
+	for i := len(data) - 1; i >= 0; i-- {
+		if data[i] != 0 {
+			return data[:i+1]
+		}
+	}
+	return nil
+}
+
 func parseReq(buffer []byte) (req Req) {
+	buffer = trimNullBytes(buffer)
+	st := string(buffer)
+	fmt.Printf("%s", strconv.Quote(st))
 	req.headers = make(map[string]string)
 	scanner := bufio.NewScanner(strings.NewReader(string(buffer)))
 	if scanner.Scan() {
@@ -48,8 +60,9 @@ func parseReq(buffer []byte) (req Req) {
 		req.headers[pair[0]] = pair[1]
 
 	}
-	reqSlice := strings.Split(string(buffer), "\r\n")
-	req.body = reqSlice[len(reqSlice)-1]
+	if scanner.Scan() {
+		req.body = scanner.Bytes()
+	}
 	return req
 }
 
@@ -169,9 +182,8 @@ func main() {
 
 		} else if req.method == "POST" {
 			content := req.body
-			err := os.WriteFile(path, []byte(content), fs.FileMode(os.O_TRUNC))
-			fmt.Println(len(content))
-			if err == nil {
+			er := os.WriteFile(path, content, 0755)
+			if er == nil {
 				res = "HTTP/1.1 201 Created\r\n\r\n"
 			} else {
 				res = "HTTP/1.1 500 Internal Server Error\r\n\r\n"
