@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"io/fs"
 	"log"
 	"path/filepath"
 	"strings"
@@ -67,7 +68,7 @@ func handleBase(conn net.Conn, req Req) {
 
 func handleConnection(conn net.Conn) {
 	defer conn.Close()
-	buffer := make([]byte, 2048)
+	buffer := make([]byte, 4096)
 	if _, err := conn.Read(buffer); err != nil {
 		log.Fatal(err.Error())
 	}
@@ -168,7 +169,7 @@ func main() {
 
 		} else if req.method == "POST" {
 			content := req.body
-			err := os.WriteFile(path, []byte(content), os.ModePerm)
+			err := os.WriteFile(path, []byte(content), fs.FileMode(os.O_TRUNC))
 			fmt.Println(len(content))
 			if err == nil {
 				res = "HTTP/1.1 201 Created\r\n\r\n"
