@@ -169,6 +169,7 @@ func main() {
 		} else if req.method == "POST" {
 			content := req.body
 			err := os.WriteFile(path, []byte(content), os.ModePerm)
+			fmt.Println(content)
 			if err == nil {
 				res = "HTTP/1.1 201 Created\r\n\r\n"
 			} else {
