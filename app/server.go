@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	// Uncomment this block to pass the first stage
@@ -37,8 +36,6 @@ func trimNullBytes(data []byte) []byte {
 
 func parseReq(buffer []byte) (req Req) {
 	buffer = trimNullBytes(buffer)
-	st := string(buffer)
-	fmt.Printf("%s", strconv.Quote(st))
 	req.headers = make(map[string]string)
 	scanner := bufio.NewScanner(strings.NewReader(string(buffer)))
 	if scanner.Scan() {
